@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import TorrentList from '@/components/TorrentList';
 import TorrentDetails from '@/components/TorrentDetails';
@@ -13,7 +13,26 @@ import SearchTorrents from '@/components/SearchTorrents';
 const Index = () => {
   const [magnetUrl, setMagnetUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('downloads');
   const { toast } = useToast();
+
+  // Listen for tab changes from sidebar
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const newTab = localStorage.getItem('activeTab');
+      if (newTab) {
+        setActiveTab(newTab);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Check on initial load too
+    handleStorageChange();
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const handleAddTorrent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +70,11 @@ const Index = () => {
     }
   };
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    localStorage.setItem('activeTab', value);
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -85,7 +109,7 @@ const Index = () => {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="downloads" className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="downloads">Downloads</TabsTrigger>
             <TabsTrigger value="search">Search</TabsTrigger>

@@ -12,21 +12,31 @@ import {
   Upload
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [activeItem, setActiveItem] = useState('downloads');
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   const menuItems = [
-    { id: 'downloads', name: 'Downloads', icon: Download },
-    { id: 'search', name: 'Search', icon: Search },
-    { id: 'files', name: 'Files', icon: Folder },
-    { id: 'settings', name: 'Settings', icon: Settings },
+    { id: 'downloads', name: 'Downloads', icon: Download, path: '/' },
+    { id: 'search', name: 'Search', icon: Search, path: '/' },
+    { id: 'files', name: 'Files', icon: Folder, path: '/files' },
+    { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
   ];
 
-  const handleClick = (id: string) => {
-    setActiveItem(id);
+  const handleClick = (id: string, path: string) => {
+    if (id === 'search') {
+      // For search, we stay on the home page but activate the search tab
+      navigate('/');
+      // We'll handle the tab switching in the Index component
+      localStorage.setItem('activeTab', 'search');
+      window.dispatchEvent(new Event('storage'));
+    } else {
+      navigate(path);
+    }
   };
   
   const handleAddTorrent = () => {
@@ -35,6 +45,18 @@ const Sidebar = () => {
       description: "Adding torrents will be available in the next update",
     });
   };
+
+  const getActiveItem = () => {
+    if (location.pathname === '/') {
+      const activeTab = localStorage.getItem('activeTab');
+      return activeTab === 'search' ? 'search' : 'downloads';
+    }
+    if (location.pathname === '/files') return 'files';
+    if (location.pathname === '/settings') return 'settings';
+    return '';
+  };
+
+  const activeItem = getActiveItem();
 
   return (
     <div className={cn(
@@ -76,7 +98,7 @@ const Sidebar = () => {
               activeItem === item.id && "bg-secondary hover:bg-secondary/80",
               collapsed ? "px-2" : ""
             )}
-            onClick={() => handleClick(item.id)}
+            onClick={() => handleClick(item.id, item.path)}
           >
             <item.icon className={cn("h-5 w-5", activeItem === item.id ? "text-primary" : "text-muted-foreground")} />
             {!collapsed && <span className="ml-2">{item.name}</span>}
