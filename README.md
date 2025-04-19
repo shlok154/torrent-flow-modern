@@ -1,73 +1,54 @@
-# Welcome to your Lovable project
+
+# TorrentFlow - Modern BitTorrent Client
+
+A sleek, responsive BitTorrent client with a beautiful dark interface built with React and styled with Tailwind CSS.
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/3f3915c9-a758-4eb0-82fd-00c8423ccfa7
 
-## How can I edit this code?
+## Features (UI Demo)
 
-There are several ways of editing your application.
+This is currently a UI demonstration that showcases:
 
-**Use Lovable**
+- ✅ Beautiful dark theme UI with purple accents
+- ✅ Torrent list with progress indicators
+- ✅ Detailed torrent information panel
+- ✅ Search interface 
+- ✅ Responsive design that works on mobile devices
+- ✅ Collapsible sidebar
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3f3915c9-a758-4eb0-82fd-00c8423ccfa7) and start prompting.
+## Next Steps
 
-Changes made via Lovable will be committed automatically to this repo.
+To make this a functional BitTorrent client, you would need to:
 
-**Use your preferred IDE**
+1. Set up a Python backend using a framework like Flask or FastAPI
+2. Integrate with libtorrent-python for BitTorrent functionality
+3. Create API endpoints for torrent management
+4. Connect the React frontend to the Python backend
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Running the Demo
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+To run the UI demonstration:
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Technology Stack
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
 - React
-- shadcn-ui
+- TypeScript
 - Tailwind CSS
+- shadcn UI Components
 
-## How can I deploy this project?
+## Full Implementation Requirements
 
-Simply open [Lovable](https://lovable.dev/projects/3f3915c9-a758-4eb0-82fd-00c8423ccfa7) and click on Share -> Publish.
+For a complete BitTorrent client implementation, you would need:
 
-## Can I connect a custom domain to my Lovable project?
+- Python 3.8+
+- libtorrent-python
+- Flask/FastAPI for the backend API
+- WebSockets for real-time updates
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
