@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
@@ -23,7 +22,6 @@ const TorrentList = () => {
   const [useRealApi, setUseRealApi] = useState(false);
   const { toast } = useToast();
 
-  // Check if API is available
   useEffect(() => {
     fetch('http://localhost:3001/api/torrents')
       .then(response => {
@@ -40,7 +38,6 @@ const TorrentList = () => {
       });
   }, []);
 
-  // Fetch torrents if API is available
   useEffect(() => {
     if (!useRealApi) return;
     
@@ -67,7 +64,6 @@ const TorrentList = () => {
 
     fetchTorrents();
     
-    // Set up polling for updates
     const interval = setInterval(fetchTorrents, 2000);
     return () => clearInterval(interval);
   }, [useRealApi, toast]);
@@ -95,7 +91,6 @@ const TorrentList = () => {
         throw new Error('Failed to update torrent');
       }
       
-      // The next polling cycle will update the UI
     } catch (error) {
       console.error('Error updating torrent:', error);
       toast({
@@ -120,7 +115,7 @@ const TorrentList = () => {
             <TableHead className="w-[15%]">Progress</TableHead>
             <TableHead className="w-[10%]">Status</TableHead>
             <TableHead className="w-[10%]">Speed</TableHead>
-            <TableHead className="w-[10%]">Actions</TableHead>
+            <TableHead className="w-[10%] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -161,18 +156,16 @@ const TorrentList = () => {
                     {torrent.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{torrent.speed}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-8 w-8 p-0"
-                      onClick={() => handleToggleTorrent(torrent)}
-                    >
-                      {torrent.status === 'Paused' ? <Play size={14} /> : <Pause size={14} />}
-                    </Button>
-                  </div>
+                <TableCell className="text-right">{torrent.speed}</TableCell>
+                <TableCell className="text-right">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0"
+                    onClick={() => handleToggleTorrent(torrent)}
+                  >
+                    {torrent.status === 'Paused' ? <Play size={14} /> : <Pause size={14} />}
+                  </Button>
                 </TableCell>
               </TableRow>
             ))
