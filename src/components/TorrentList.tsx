@@ -30,9 +30,16 @@ const TorrentList = () => {
               </TableCell>
               <TableCell>{torrent.size}</TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <Progress value={torrent.progress} className="h-2" />
-                  <span className="text-xs">{torrent.progress}%</span>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-grow">
+                    <Progress 
+                      value={torrent.progress} 
+                      className="h-2 bg-secondary/50" 
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground w-10 text-right">
+                    {torrent.progress}%
+                  </span>
                 </div>
               </TableCell>
               <TableCell>
