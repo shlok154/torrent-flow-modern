@@ -12,18 +12,43 @@ import SearchTorrents from '@/components/SearchTorrents';
 
 const Index = () => {
   const [magnetUrl, setMagnetUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleAddTorrent = (e: React.FormEvent) => {
+  const handleAddTorrent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!magnetUrl) return;
     
-    toast({
-      title: "Demo Mode",
-      description: "This is a UI demo. Adding torrents is not functional in this version.",
-    });
+    setIsSubmitting(true);
     
-    setMagnetUrl('');
+    try {
+      // Try to use the real API first
+      const response = await fetch('http://localhost:3001/api/torrents/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ magnetUrl })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Torrent Added",
+          description: `Started downloading: ${data.name}`
+        });
+      } else {
+        // If API call fails, show demo message
+        throw new Error('API unavailable');
+      }
+    } catch (error) {
+      console.log('API error:', error);
+      toast({
+        title: "Demo Mode",
+        description: "This is a UI demo. Adding torrents is not functional in this version.",
+      });
+    } finally {
+      setMagnetUrl('');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -49,8 +74,12 @@ const Index = () => {
                 onChange={(e) => setMagnetUrl(e.target.value)}
                 className="flex-grow bg-secondary/50"
               />
-              <Button type="submit" className="bg-torrent-purple hover:bg-torrent-dark-purple">
-                Add Torrent
+              <Button 
+                type="submit" 
+                className="bg-torrent-purple hover:bg-torrent-dark-purple"
+                disabled={isSubmitting || !magnetUrl}
+              >
+                {isSubmitting ? 'Adding...' : 'Add Torrent'}
               </Button>
             </form>
           </CardContent>
@@ -74,9 +103,9 @@ const Index = () => {
       </div>
 
       <div className="mt-8 text-center text-xs text-muted-foreground">
-        <p>TorrentFlow - Modern BitTorrent Client Demo</p>
+        <p>TorrentFlow - Modern BitTorrent Client</p>
         <p className="mt-1">
-          This is a UI demonstration. Full functionality would require Python backend integration with libtorrent.
+          Downloads are saved to the "downloads" folder in your project directory.
         </p>
       </div>
     </AppLayout>
