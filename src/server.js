@@ -1,9 +1,13 @@
 
-const express = require('express');
-const cors = require('cors');
-const WebTorrent = require('webtorrent');
-const path = require('path');
-const fs = require('fs');
+import express from 'express';
+import cors from 'cors';
+import WebTorrent from 'webtorrent';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -171,11 +175,9 @@ function getStatus(torrent) {
 }
 
 // Start the server
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Downloads will be saved to: ${downloadsDir}`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Downloads will be saved to: ${downloadsDir}`);
+});
 
-module.exports = app;
+export default app;
