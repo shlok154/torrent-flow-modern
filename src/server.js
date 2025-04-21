@@ -33,7 +33,6 @@ if (!fs.existsSync(downloadsDir)) {
 
 // Initialize WebTorrent client
 const client = new WebTorrent();
-const torrents = {};
 
 // Configure CORS more explicitly
 app.use(cors({
@@ -49,21 +48,26 @@ app.use(express.static(path.join(__dirname, '../dist')));
 // API Routes
 app.get('/api/torrents', (req, res) => {
   console.log('GET /api/torrents request received');
-  const torrentList = client.torrents.map(torrent => {
-    return {
-      id: torrent.infoHash,
-      name: torrent.name,
-      size: formatBytes(torrent.length),
-      progress: Math.round(torrent.progress * 100),
-      status: getStatus(torrent),
-      speed: `${formatBytes(torrent.downloadSpeed)}/s`,
-      uploadSpeed: `${formatBytes(torrent.uploadSpeed)}/s`,
-      peers: torrent.numPeers
-    };
-  });
-  
-  console.log(`Returning ${torrentList.length} torrents`);
-  res.json(torrentList);
+  try {
+    const torrentList = client.torrents.map(torrent => {
+      return {
+        id: torrent.infoHash,
+        name: torrent.name || 'Unknown',
+        size: formatBytes(torrent.length || 0),
+        progress: Math.round((torrent.progress || 0) * 100),
+        status: getStatus(torrent),
+        speed: `${formatBytes(torrent.downloadSpeed || 0)}/s`,
+        uploadSpeed: `${formatBytes(torrent.uploadSpeed || 0)}/s`,
+        peers: torrent.numPeers || 0
+      };
+    });
+    
+    console.log(`Returning ${torrentList.length} torrents`);
+    res.json(torrentList);
+  } catch (error) {
+    console.error('Error in GET /api/torrents:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.post('/api/torrents/add', (req, res) => {
@@ -76,8 +80,27 @@ app.post('/api/torrents/add', (req, res) => {
   }
 
   try {
+    // Check if torrent already exists by looking at magnet URI
+    const existingTorrent = client.torrents.find(t => {
+      // Compare by magnet URI or infoHash if available
+      return t.magnetURI === magnetUrl || 
+             (t.infoHash && magnetUrl.includes(t.infoHash));
+    });
+
+    if (existingTorrent) {
+      console.log(`Torrent already exists: ${existingTorrent.name || 'Unknown'}`);
+      return res.json({
+        id: existingTorrent.infoHash,
+        name: existingTorrent.name || 'Unknown',
+        size: formatBytes(existingTorrent.length || 0),
+        progress: Math.round((existingTorrent.progress || 0) * 100),
+        status: getStatus(existingTorrent),
+        message: 'Torrent already added'
+      });
+    }
+    
     // Add some debug logging
-    console.log('Adding torrent with magnet URL:', magnetUrl);
+    console.log('Adding new torrent with magnet URL:', magnetUrl);
     
     // Set a timeout for torrent addition
     const torrentTimeout = setTimeout(() => {
@@ -89,7 +112,7 @@ app.post('/api/torrents/add', (req, res) => {
       // Clear the timeout since we got a response
       clearTimeout(torrentTimeout);
       
-      console.log(`Torrent added successfully: ${torrent.name}`);
+      console.log(`Torrent added successfully: ${torrent.name || 'Unknown'}`);
       
       torrent.on('ready', () => {
         console.log(`Torrent ready: ${torrent.name}`);
@@ -97,7 +120,10 @@ app.post('/api/torrents/add', (req, res) => {
 
       torrent.on('download', () => {
         // Progress update events
-        console.log(`Progress: ${Math.round(torrent.progress * 100)}%`);
+        const progress = Math.round((torrent.progress || 0) * 100);
+        if (progress % 10 === 0) { // Log only at 10% intervals to reduce spam
+          console.log(`Progress: ${progress}%`);
+        }
       });
 
       torrent.on('done', () => {
@@ -110,9 +136,9 @@ app.post('/api/torrents/add', (req, res) => {
 
       res.json({
         id: torrent.infoHash,
-        name: torrent.name,
-        size: formatBytes(torrent.length),
-        progress: Math.round(torrent.progress * 100),
+        name: torrent.name || 'Unknown',
+        size: formatBytes(torrent.length || 0),
+        progress: Math.round((torrent.progress || 0) * 100),
         status: getStatus(torrent)
       });
     }).on('error', err => {
@@ -129,56 +155,71 @@ app.post('/api/torrents/add', (req, res) => {
 
 app.post('/api/torrents/:id/pause', (req, res) => {
   const { id } = req.params;
-  const torrent = client.torrents.find(t => t.infoHash === id);
-  
-  if (!torrent) {
-    return res.status(404).json({ error: 'Torrent not found' });
+  try {
+    const torrent = client.torrents.find(t => t.infoHash === id);
+    
+    if (!torrent) {
+      return res.status(404).json({ error: 'Torrent not found' });
+    }
+    
+    torrent.pause();
+    res.json({ success: true, status: 'paused' });
+  } catch (error) {
+    console.error('Error pausing torrent:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  
-  torrent.pause();
-  res.json({ success: true, status: 'paused' });
 });
 
 app.post('/api/torrents/:id/resume', (req, res) => {
   const { id } = req.params;
-  const torrent = client.torrents.find(t => t.infoHash === id);
-  
-  if (!torrent) {
-    return res.status(404).json({ error: 'Torrent not found' });
+  try {
+    const torrent = client.torrents.find(t => t.infoHash === id);
+    
+    if (!torrent) {
+      return res.status(404).json({ error: 'Torrent not found' });
+    }
+    
+    torrent.resume();
+    res.json({ success: true, status: 'downloading' });
+  } catch (error) {
+    console.error('Error resuming torrent:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  
-  torrent.resume();
-  res.json({ success: true, status: 'downloading' });
 });
 
 app.get('/api/torrents/:id', (req, res) => {
   const { id } = req.params;
-  const torrent = client.torrents.find(t => t.infoHash === id);
-  
-  if (!torrent) {
-    return res.status(404).json({ error: 'Torrent not found' });
+  try {
+    const torrent = client.torrents.find(t => t.infoHash === id);
+    
+    if (!torrent) {
+      return res.status(404).json({ error: 'Torrent not found' });
+    }
+    
+    const files = torrent.files.map(file => {
+      return {
+        name: file.name,
+        size: formatBytes(file.length || 0),
+        progress: Math.round((file.progress || 0) * 100)
+      };
+    });
+    
+    res.json({
+      id: torrent.infoHash,
+      name: torrent.name || 'Unknown',
+      size: formatBytes(torrent.length || 0),
+      progress: Math.round((torrent.progress || 0) * 100),
+      status: getStatus(torrent),
+      downloadSpeed: formatBytes(torrent.downloadSpeed || 0) + '/s',
+      uploadSpeed: formatBytes(torrent.uploadSpeed || 0) + '/s',
+      timeRemaining: formatTime(torrent.timeRemaining),
+      peers: torrent.numPeers || 0,
+      files: files
+    });
+  } catch (error) {
+    console.error('Error getting torrent details:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  
-  const files = torrent.files.map(file => {
-    return {
-      name: file.name,
-      size: formatBytes(file.length),
-      progress: Math.round(file.progress * 100)
-    };
-  });
-  
-  res.json({
-    id: torrent.infoHash,
-    name: torrent.name,
-    size: formatBytes(torrent.length),
-    progress: Math.round(torrent.progress * 100),
-    status: getStatus(torrent),
-    downloadSpeed: formatBytes(torrent.downloadSpeed) + '/s',
-    uploadSpeed: formatBytes(torrent.uploadSpeed) + '/s',
-    timeRemaining: formatTime(torrent.timeRemaining),
-    peers: torrent.numPeers,
-    files: files
-  });
 });
 
 // Helper functions
@@ -232,5 +273,27 @@ server.on('error', (error) => {
     process.exit(1);
   }
 });
+
+// Handle process termination signals
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+
+function gracefulShutdown() {
+  console.log('Shutting down server gracefully...');
+  server.close(() => {
+    console.log('Server closed.');
+    // Destroy WebTorrent client properly
+    client.destroy(() => {
+      console.log('WebTorrent client destroyed.');
+      process.exit(0);
+    });
+  });
+  
+  // Force exit after 10 seconds if cleanup is taking too long
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+}
 
 export default app;
