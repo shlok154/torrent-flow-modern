@@ -35,13 +35,20 @@ if (!fs.existsSync(downloadsDir)) {
 const client = new WebTorrent();
 const torrents = {};
 
+// Configure CORS more explicitly
+app.use(cors({
+  origin: ['http://localhost:8080', 'http://localhost:3000', '*'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Middleware
-app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // API Routes
 app.get('/api/torrents', (req, res) => {
+  console.log('GET /api/torrents request received');
   const torrentList = client.torrents.map(torrent => {
     return {
       id: torrent.infoHash,
@@ -55,11 +62,14 @@ app.get('/api/torrents', (req, res) => {
     };
   });
   
+  console.log(`Returning ${torrentList.length} torrents`);
   res.json(torrentList);
 });
 
 app.post('/api/torrents/add', (req, res) => {
   const { magnetUrl } = req.body;
+  
+  console.log('POST /api/torrents/add request received with:', magnetUrl ? 'Valid magnet URL' : 'Missing magnet URL');
   
   if (!magnetUrl) {
     return res.status(400).json({ error: 'Magnet URL is required' });
@@ -207,9 +217,20 @@ function getStatus(torrent) {
 }
 
 // Start the server
-app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Server listening on all interfaces (0.0.0.0)`);
+  console.log(`Try accessing: http://localhost:${PORT}/api/torrents`);
   console.log(`Downloads will be saved to: ${downloadsDir}`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  console.error('Server error:', error);
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Try using a different port.`);
+    process.exit(1);
+  }
 });
 
 export default app;
