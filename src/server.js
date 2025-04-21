@@ -66,9 +66,23 @@ app.post('/api/torrents/add', (req, res) => {
   }
 
   try {
+    // Add some debug logging
+    console.log('Adding torrent with magnet URL:', magnetUrl);
+    
+    // Set a timeout for torrent addition
+    const torrentTimeout = setTimeout(() => {
+      console.error('Torrent addition timed out');
+      return res.status(408).json({ error: 'Torrent addition timed out' });
+    }, 30000); // 30 second timeout
+    
     client.add(magnetUrl, { path: downloadsDir }, torrent => {
+      // Clear the timeout since we got a response
+      clearTimeout(torrentTimeout);
+      
+      console.log(`Torrent added successfully: ${torrent.name}`);
+      
       torrent.on('ready', () => {
-        console.log(`Torrent added: ${torrent.name}`);
+        console.log(`Torrent ready: ${torrent.name}`);
       });
 
       torrent.on('download', () => {
@@ -91,10 +105,15 @@ app.post('/api/torrents/add', (req, res) => {
         progress: Math.round(torrent.progress * 100),
         status: getStatus(torrent)
       });
+    }).on('error', err => {
+      // Handle errors during torrent addition
+      clearTimeout(torrentTimeout);
+      console.error('Error while adding torrent:', err.message);
+      res.status(500).json({ error: `Failed to add torrent: ${err.message}` });
     });
   } catch (error) {
-    console.error('Error adding torrent:', error);
-    res.status(500).json({ error: 'Failed to add torrent' });
+    console.error('Exception adding torrent:', error);
+    res.status(500).json({ error: `Exception adding torrent: ${error.message}` });
   }
 });
 
