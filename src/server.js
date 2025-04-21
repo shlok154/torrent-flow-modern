@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import WebTorrent from 'webtorrent';
@@ -66,6 +65,60 @@ app.get('/api/torrents', (req, res) => {
     res.json(torrentList);
   } catch (error) {
     console.error('Error in GET /api/torrents:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// NEW API endpoint for getting files in downloads directory
+app.get('/api/files', (req, res) => {
+  console.log('GET /api/files request received');
+  try {
+    const files = [];
+    
+    // Read the downloads directory
+    fs.readdir(downloadsDir, { withFileTypes: true }, (err, dirEntries) => {
+      if (err) {
+        console.error('Error reading downloads directory:', err);
+        return res.status(500).json({ error: 'Failed to read downloads directory' });
+      }
+      
+      let processedCount = 0;
+      
+      // If directory is empty
+      if (dirEntries.length === 0) {
+        console.log('Downloads directory is empty');
+        return res.json([]);
+      }
+      
+      // Process each directory entry
+      dirEntries.forEach(entry => {
+        const entryPath = path.join(downloadsDir, entry.name);
+        
+        fs.stat(entryPath, (err, stats) => {
+          if (err) {
+            console.error(`Error getting stats for ${entry.name}:`, err);
+          } else {
+            const fileInfo = {
+              name: entry.name,
+              type: entry.isDirectory() ? 'folder' : 'file',
+              size: formatBytes(stats.size),
+              date: stats.mtime.toISOString().split('T')[0] // Format: YYYY-MM-DD
+            };
+            
+            files.push(fileInfo);
+          }
+          
+          // Check if this is the last entry to process
+          processedCount++;
+          if (processedCount === dirEntries.length) {
+            console.log(`Returning ${files.length} files/folders from downloads directory`);
+            res.json(files);
+          }
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Error in GET /api/files:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
