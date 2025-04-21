@@ -6,6 +6,19 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
+// Check if dependencies are properly installed
+try {
+  // These will throw errors if dependencies are missing
+  const expressCheck = express;
+  const corsCheck = cors;
+  const webtorrentCheck = WebTorrent;
+  console.log('All required dependencies are installed.');
+} catch (error) {
+  console.error('Error: Missing dependencies. Please run "npm install" before starting the server.');
+  console.error('Specific error:', error.message);
+  process.exit(1);
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
