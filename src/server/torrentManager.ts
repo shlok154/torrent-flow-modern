@@ -1,6 +1,6 @@
 
 import WebTorrent from 'webtorrent';
-import { formatBytes, getStatus } from './utils';
+import { formatBytes, formatTime, getStatus } from './utils';
 
 class TorrentManager {
   private client: WebTorrent.Instance;
