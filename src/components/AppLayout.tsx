@@ -1,6 +1,6 @@
 
 import React from 'react';
-import Sidebar from './Sidebar';
+import Sidebar from './sidebar/Sidebar';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
