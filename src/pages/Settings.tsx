@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Slider } from "@/components/ui/slider";
 import { getSettings, updateSettings } from '@/utils/settings';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Filter, Shield, SliderHorizontal, Calendar, Bug, List } from 'lucide-react';
+import { Filter, Shield, SlidersHorizontal, Calendar, Bug, List } from 'lucide-react';
 
 const Settings = () => {
   const [settings, setSettings] = useState(getSettings());
@@ -29,7 +28,6 @@ const Settings = () => {
   const [maxConcurrentDownloads, setMaxConcurrentDownloads] = useState(5);
   const { toast } = useToast();
 
-  // Fetch bandwidth settings
   useEffect(() => {
     const fetchBandwidthSettings = async () => {
       try {
@@ -168,7 +166,7 @@ const Settings = () => {
           <TabsList className="grid grid-cols-6 mb-4">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="bandwidth" className="flex items-center gap-1">
-              <SliderHorizontal size={14} />
+              <SlidersHorizontal size={14} />
               <span>Bandwidth</span>
             </TabsTrigger>
             <TabsTrigger value="ipfilter" className="flex items-center gap-1">
@@ -259,7 +257,7 @@ const Settings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <SliderHorizontal size={18} className="text-torrent-purple" />
+                  <SlidersHorizontal size={18} className="text-torrent-purple" />
                   <span>Bandwidth Limits</span>
                 </CardTitle>
                 <CardDescription>Control your download and upload speeds</CardDescription>
