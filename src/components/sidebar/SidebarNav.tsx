@@ -12,7 +12,7 @@ interface SidebarNavProps {
 const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
-
+  
   const menuItems = [
     { id: 'downloads', name: 'Downloads', icon: Download, path: '/' },
     { id: 'search', name: 'Search', icon: Search, path: '/' },
