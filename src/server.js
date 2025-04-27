@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import { torrentManager } from './server/torrentManager.js';
@@ -124,8 +123,6 @@ app.get('/api/torrents/:id', (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-// NEW API ENDPOINTS
 
 // Bandwidth limiting
 app.get('/api/bandwidth', (req, res) => {
@@ -388,7 +385,7 @@ app.delete('/api/schedule/:id', (req, res) => {
 });
 
 // Start the server
-const server = app.listen(PORT, '0.0.0.0', () => {
+const serverInstance = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Server listening on all interfaces (0.0.0.0)`);
   console.log(`Try accessing: http://localhost:${PORT}/api/torrents`);
@@ -396,7 +393,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 // Handle server errors
-server.on('error', (error) => {
+serverInstance.on('error', (error) => {
   console.error('Server error:', error);
   if (error.code === 'EADDRINUSE') {
     console.error(`Port ${PORT} is already in use. Try using a different port.`);
@@ -410,7 +407,7 @@ process.on('SIGTERM', gracefulShutdown);
 
 async function gracefulShutdown() {
   console.log('Shutting down server gracefully...');
-  server.close(async () => {
+  serverInstance.close(async () => {
     console.log('Server closed.');
     await torrentManager.destroy();
     console.log('WebTorrent client destroyed.');
