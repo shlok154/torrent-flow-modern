@@ -1,12 +1,16 @@
 
 import express from 'express';
 import cors from 'cors';
-import { torrentManager } from './server/torrentManager';
-import { fileManager } from './server/fileManager';
-import { ipFilter } from './server/ipFilter';
-import { queueManager } from './server/queueManager';
-import { scheduleManager } from './server/scheduleManager';
+import { torrentManager } from './server/torrentManager.js';
+import { fileManager } from './server/fileManager.js';
+import { ipFilter } from './server/ipFilter.js';
+import { queueManager } from './server/queueManager.js';
+import { scheduleManager } from './server/scheduleManager.js';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Check dependencies
 try {
