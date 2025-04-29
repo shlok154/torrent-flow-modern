@@ -101,6 +101,19 @@ class ScheduleManager {
     return false;
   }
 
+  // Add the missing removeSchedulesByTorrentId method
+  removeSchedulesByTorrentId(torrentId: string): boolean {
+    const initialLength = this.schedules.length;
+    this.schedules = this.schedules.filter(s => s.torrentId !== torrentId);
+    
+    if (this.schedules.length !== initialLength) {
+      this.saveSchedules();
+      return true;
+    }
+    
+    return false;
+  }
+
   getActiveSchedules(): ScheduleItem[] {
     const now = new Date();
     const currentDay = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][now.getDay()];

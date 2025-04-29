@@ -82,6 +82,13 @@ class QueueManager {
     return queueItem.filePriorities[fileName];
   }
 
+  // Add the missing removeTorrent method
+  removeTorrent(torrentId: string): boolean {
+    const initialLength = this.queue.length;
+    this.queue = this.queue.filter(item => item.id !== torrentId);
+    return this.queue.length !== initialLength;
+  }
+
   private getOrCreateQueueItem(torrentId: string): QueuedTorrent {
     let queueItem = this.queue.find(item => item.id === torrentId);
     
