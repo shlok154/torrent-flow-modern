@@ -4,6 +4,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { torrentManager } from './server/torrentManager.js';
+import { Server } from 'socket.io';
+import http from 'http';
 
 // Import routes
 import torrentRoutes from './server/routes/torrentRoutes.js';
@@ -30,12 +32,26 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configure CORS
-app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:3000', '*'],
+// Create HTTP server for Socket.io
+const httpServer = http.createServer(app);
+
+// Configure CORS with options that will work for both Express and Socket.io
+const corsOptions = {
+  origin: ['http://localhost:8080', 'http://localhost:3000', 'http://localhost:5173', '*'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
+};
+
+app.use(cors(corsOptions));
+
+// Setup Socket.io with same CORS settings
+const io = new Server(httpServer, {
+  cors: corsOptions
+});
+
+// Initialize WebSocket connection handling
+import { setupWebSocketHandlers } from './server/websocket.js';
+setupWebSocketHandlers(io, torrentManager);
 
 // Middleware
 app.use(express.json());
@@ -50,10 +66,11 @@ app.use('/api/queue', queueRoutes);
 app.use('/api/schedule', scheduleRoutes);
 
 // Start the server
-const serverInstance = app.listen(PORT, '0.0.0.0', () => {
+const serverInstance = httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Server listening on all interfaces (0.0.0.0)`);
-  console.log(`Try accessing: http://localhost:${PORT}/api/torrents`);
+  console.log(`Access the API at: http://localhost:${PORT}/api/torrents`);
+  console.log(`WebSocket server is also running on port ${PORT}`);
 });
 
 // Handle server errors
@@ -86,4 +103,3 @@ async function gracefulShutdown() {
 }
 
 export default app;
-

@@ -1,10 +1,11 @@
-
 import WebTorrent from 'webtorrent';
-import { formatBytes, formatTime, getStatus } from './utils';
+import { formatBytes, formatTime, getStatus, isValidInfoHash } from './utils';
 import { TorrentInfo, TorrentDetails, PeerInfo, TorrentMetrics, BandwidthSettings } from '../types/torrent';
 import { ipFilter } from './ipFilter';
 import { scheduleManager } from './scheduleManager';
 import { queueManager } from './queueManager';
+import fs from 'fs';
+import path from 'path';
 
 class TorrentManager {
   private client: WebTorrent.Instance;
@@ -231,6 +232,121 @@ class TorrentManager {
       console.error('Error in addTorrent:', error);
       throw new Error(`Failed to add torrent: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  async addTorrentFile(filePath: string, downloadPath: string, options: { 
+    maxBandwidth?: number,
+    verifyPieces?: boolean,
+    priority?: number,
+    startImmediately?: boolean
+  } = {}): Promise<TorrentInfo> {
+    try {
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`Torrent file not found at ${filePath}`);
+      }
+
+      const torrent = await new Promise<WebTorrent.Torrent>((resolve, reject) => {
+        const torrentOptions: WebTorrent.TorrentOptions = { 
+          path: downloadPath,
+          verify: options.verifyPieces || false
+        };
+        
+        if (options.startImmediately === false) {
+          torrentOptions.paused = true;
+        }
+        
+        const torrentBuffer = fs.readFileSync(filePath);
+        const newTorrent = this.client.add(torrentBuffer, torrentOptions);
+        
+        const errorHandler = (err: Error) => {
+          reject(new Error(`Failed to add torrent file: ${err.message}`));
+          newTorrent.removeListener('error', errorHandler);
+          newTorrent.removeListener('metadata', metadataHandler);
+        };
+        
+        const metadataHandler = () => {
+          resolve(newTorrent);
+          newTorrent.removeListener('error', errorHandler);
+          newTorrent.removeListener('metadata', metadataHandler);
+        };
+        
+        newTorrent.on('error', errorHandler);
+        newTorrent.on('metadata', metadataHandler);
+        
+        // Set up retry logic, verification and bandwidth settings
+        // as in addTorrent method
+        newTorrent.on('done', () => {
+          this.verifiedTorrents.add(newTorrent.infoHash);
+        });
+        
+        if (options.maxBandwidth && newTorrent.throttleDownload) {
+          newTorrent.throttleDownload(options.maxBandwidth * 1024);
+        }
+        
+        if (options.priority) {
+          queueManager.setPriority(newTorrent.infoHash, options.priority);
+        }
+      });
+
+      return {
+        id: torrent.infoHash,
+        name: torrent.name || 'Unknown',
+        size: formatBytes(torrent.length || 0),
+        progress: Math.round((torrent.progress || 0) * 100),
+        status: getStatus(torrent),
+        peers: torrent.numPeers || 0,
+        verified: this.verifiedTorrents.has(torrent.infoHash),
+        added: torrent.created || new Date()
+      };
+    } catch (error) {
+      console.error('Error in addTorrentFile:', error);
+      throw new Error(`Failed to add torrent file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  removeTorrent(infoHash: string, removeFiles = false): boolean {
+    if (!isValidInfoHash(infoHash)) {
+      return false;
+    }
+    
+    const torrent = this.client.torrents.find(t => t.infoHash === infoHash);
+    if (!torrent) return false;
+    
+    console.log(`Removing torrent: ${torrent.name || infoHash}`);
+    console.log(`Also removing files: ${removeFiles}`);
+    
+    // Remove from various trackers
+    this.retryAttempts.delete(infoHash);
+    this.metrics.delete(infoHash);
+    this.verifiedTorrents.delete(infoHash);
+    queueManager.removeTorrent(infoHash);
+    scheduleManager.removeSchedulesByTorrentId(infoHash);
+    
+    try {
+      this.client.remove(infoHash, { destroyStore: removeFiles });
+      return true;
+    } catch (error) {
+      console.error('Error removing torrent:', error);
+      return false;
+    }
+  }
+
+  getFileInfo(infoHash: string, fileIndex: number): { path: string, name: string } | null {
+    if (!isValidInfoHash(infoHash)) {
+      return null;
+    }
+    
+    const torrent = this.client.torrents.find(t => t.infoHash === infoHash);
+    if (!torrent || !torrent.files || fileIndex >= torrent.files.length) {
+      return null;
+    }
+    
+    const file = torrent.files[fileIndex];
+    
+    return {
+      path: file.path,
+      name: path.basename(file.path)
+    };
   }
 
   pauseTorrent(infoHash: string): boolean {
