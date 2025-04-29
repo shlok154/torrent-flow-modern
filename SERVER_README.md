@@ -51,6 +51,37 @@ A full-featured BitTorrent management server that powers the TorrentFlow client.
    npm start
    ```
 
+## How to Test the Server
+
+1. Start the server:
+   ```bash
+   npm run server
+   ```
+
+2. Test the API endpoints using curl or Postman:
+
+   - Add a torrent:
+     ```bash
+     curl -X POST -H "Content-Type: application/json" -d '{"magnetUrl":"magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel"}' http://localhost:3001/api/torrents/add
+     ```
+
+   - Get torrent list:
+     ```bash
+     curl http://localhost:3001/api/torrents
+     ```
+
+   - Get torrent details:
+     ```bash
+     curl http://localhost:3001/api/torrents/08ada5a7a6183aae1e09d831df6748d566095a10
+     ```
+
+   - Remove a torrent:
+     ```bash
+     curl -X DELETE http://localhost:3001/api/torrents/08ada5a7a6183aae1e09d831df6748d566095a10
+     ```
+
+3. Test WebSocket connection using a WebSocket client or by opening the frontend application.
+
 ## API Endpoints
 
 ### Torrents

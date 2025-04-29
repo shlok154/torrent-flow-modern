@@ -1,32 +1,37 @@
 
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { torrentManager } from '../torrentManager.js';
 import { fileManager } from '../fileManager.js';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import { generateUID } from '../utils.js';
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Configure multer for .torrent file uploads
+// Set up multer for handling torrent file uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+  destination: function(req, file, cb) {
+    const tempDir = path.join(__dirname, '../../../temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
     }
-    cb(null, uploadsDir);
+    cb(null, tempDir);
   },
-  filename: (req, file, cb) => {
-    cb(null, `${generateUID()}-${file.originalname}`);
+  filename: function(req, file, cb) {
+    const uniqueFilename = `${Date.now()}-${generateUID()}-${file.originalname}`;
+    cb(null, uniqueFilename);
   }
 });
 
 const upload = multer({ 
-  storage, 
+  storage: storage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/x-bittorrent' || path.extname(file.originalname) === '.torrent') {
+    // Only accept .torrent files
+    if (path.extname(file.originalname).toLowerCase() === '.torrent') {
       cb(null, true);
     } else {
       cb(new Error('Only .torrent files are allowed'));
@@ -37,184 +42,182 @@ const upload = multer({
   }
 });
 
-// GET /api/torrents - Get all torrents
+// Get all torrents
 router.get('/', (req, res) => {
-  console.log('GET /api/torrents request received');
   try {
-    const torrentList = torrentManager.getTorrents();
-    console.log(`Returning ${torrentList.length} torrents`);
-    res.json(torrentList);
+    const torrents = torrentManager.getTorrents();
+    res.json(torrents);
   } catch (error) {
-    console.error('Error in GET /api/torrents:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error getting torrents:', error);
+    res.status(500).json({ error: 'Failed to get torrents' });
   }
 });
 
-// POST /api/torrents/add - Add torrent by magnet link
-router.post('/add', async (req, res) => {
-  const { magnetUrl, options = {} } = req.body;
-  console.log('POST /api/torrents/add request received with:', magnetUrl ? 'Valid magnet URL' : 'Missing magnet URL');
-  
-  if (!magnetUrl) {
-    return res.status(400).json({ error: 'Magnet URL is required' });
-  }
-
-  try {
-    const result = await torrentManager.addTorrent(
-      magnetUrl, 
-      fileManager.getDownloadsPath(),
-      options
-    );
-    res.json(result);
-  } catch (error) {
-    console.error('Error adding torrent:', error);
-    res.status(500).json({ error: `Failed to add torrent: ${error.message}` });
-  }
-});
-
-// POST /api/torrents/upload - Upload .torrent file
-router.post('/upload', upload.single('torrentFile'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No torrent file uploaded' });
-    }
-    
-    const filePath = req.file.path;
-    console.log(`Torrent file uploaded to ${filePath}`);
-    
-    const result = await torrentManager.addTorrentFile(
-      filePath,
-      fileManager.getDownloadsPath(),
-      req.body.options ? JSON.parse(req.body.options) : {}
-    );
-    
-    // Clean up the uploaded file after adding it to the client
-    fs.unlink(filePath, (err) => {
-      if (err) console.error('Error deleting torrent file:', err);
-    });
-    
-    res.json(result);
-  } catch (error) {
-    console.error('Error uploading torrent file:', error);
-    res.status(500).json({ error: `Failed to add torrent file: ${error.message}` });
-  }
-});
-
-// GET /api/torrents/:id - Get torrent details
+// Get detailed information about a specific torrent
 router.get('/:id', (req, res) => {
-  const { id } = req.params;
   try {
-    const details = torrentManager.getTorrentDetails(id);
+    const torrentId = req.params.id;
+    const details = torrentManager.getTorrentDetails(torrentId);
+    
     if (details) {
       res.json(details);
     } else {
       res.status(404).json({ error: 'Torrent not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error getting torrent details:', error);
+    res.status(500).json({ error: 'Failed to get torrent details' });
   }
 });
 
-// DELETE /api/torrents/:id - Remove torrent
-router.delete('/:id', (req, res) => {
-  const { id } = req.params;
-  const { removeFiles = false } = req.query;
-  
+// Add a torrent via magnet link
+router.post('/add', async (req, res) => {
   try {
-    const success = torrentManager.removeTorrent(id, removeFiles === 'true');
-    if (success) {
+    const { magnetUrl, options } = req.body;
+    
+    if (!magnetUrl) {
+      return res.status(400).json({ error: 'Magnet URL is required' });
+    }
+    
+    const downloadPath = fileManager.getDownloadsPath();
+    const torrent = await torrentManager.addTorrent(magnetUrl, downloadPath, options);
+    
+    res.status(201).json(torrent);
+  } catch (error) {
+    console.error('Error adding torrent:', error);
+    res.status(500).json({ error: error.message || 'Failed to add torrent' });
+  }
+});
+
+// Upload a .torrent file
+router.post('/upload', upload.single('torrent'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Torrent file is required' });
+    }
+    
+    const filePath = req.file.path;
+    const downloadPath = fileManager.getDownloadsPath();
+    const options = req.body.options ? JSON.parse(req.body.options) : {};
+    
+    const torrent = await torrentManager.addTorrentFile(filePath, downloadPath, options);
+    
+    // Remove the temporary file
+    fs.unlink(filePath, (err) => {
+      if (err) console.error('Error removing temp file:', err);
+    });
+    
+    res.status(201).json(torrent);
+  } catch (error) {
+    console.error('Error uploading torrent file:', error);
+    res.status(500).json({ error: error.message || 'Failed to upload torrent file' });
+    
+    // Clean up the file in case of error
+    if (req.file) {
+      fs.unlink(req.file.path, () => {});
+    }
+  }
+});
+
+// Remove a torrent
+router.delete('/:id', (req, res) => {
+  try {
+    const torrentId = req.params.id;
+    const removeFiles = req.query.removeFiles === 'true';
+    
+    const removed = torrentManager.removeTorrent(torrentId, removeFiles);
+    
+    if (removed) {
       res.json({ success: true });
     } else {
-      res.status(404).json({ error: 'Torrent not found' });
+      res.status(404).json({ error: 'Torrent not found or could not be removed' });
     }
   } catch (error) {
     console.error('Error removing torrent:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to remove torrent' });
   }
 });
 
-// POST /api/torrents/:id/pause - Pause torrent
+// Pause a torrent
 router.post('/:id/pause', (req, res) => {
-  const { id } = req.params;
   try {
-    const success = torrentManager.pauseTorrent(id);
-    if (success) {
-      res.json({ success: true, status: 'paused' });
+    const torrentId = req.params.id;
+    const paused = torrentManager.pauseTorrent(torrentId);
+    
+    if (paused) {
+      res.json({ success: true });
     } else {
-      res.status(404).json({ error: 'Torrent not found' });
+      res.status(404).json({ error: 'Torrent not found or could not be paused' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error pausing torrent:', error);
+    res.status(500).json({ error: 'Failed to pause torrent' });
   }
 });
 
-// POST /api/torrents/:id/resume - Resume torrent
+// Resume a torrent
 router.post('/:id/resume', (req, res) => {
-  const { id } = req.params;
   try {
-    const success = torrentManager.resumeTorrent(id);
-    if (success) {
-      res.json({ success: true, status: 'downloading' });
+    const torrentId = req.params.id;
+    const resumed = torrentManager.resumeTorrent(torrentId);
+    
+    if (resumed) {
+      res.json({ success: true });
     } else {
-      res.status(404).json({ error: 'Torrent not found' });
+      res.status(404).json({ error: 'Torrent not found or could not be resumed' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error resuming torrent:', error);
+    res.status(500).json({ error: 'Failed to resume torrent' });
   }
 });
 
-// POST /api/torrents/:id/files - Select files to download
+// Select which files to download
 router.post('/:id/files', (req, res) => {
-  const { id } = req.params;
-  const { fileIndices } = req.body;
-  
-  if (!Array.isArray(fileIndices)) {
-    return res.status(400).json({ error: 'File indices must be an array' });
-  }
-  
   try {
-    const success = torrentManager.selectFiles(id, fileIndices);
+    const torrentId = req.params.id;
+    const { fileIndices } = req.body;
+    
+    if (!Array.isArray(fileIndices)) {
+      return res.status(400).json({ error: 'fileIndices must be an array' });
+    }
+    
+    const success = torrentManager.selectFiles(torrentId, fileIndices);
+    
     if (success) {
       res.json({ success: true });
     } else {
-      res.status(404).json({ error: 'Torrent not found' });
+      res.status(404).json({ error: 'Torrent not found or files could not be selected' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error selecting files:', error);
+    res.status(500).json({ error: 'Failed to select files' });
   }
 });
 
-// GET /api/torrents/:id/files/:index - Download a file directly
+// Download a specific file
 router.get('/:id/files/:index', (req, res) => {
-  const { id, index } = req.params;
-  
   try {
-    const fileInfo = torrentManager.getFileInfo(id, parseInt(index));
+    const torrentId = req.params.id;
+    const fileIndex = parseInt(req.params.index, 10);
+    
+    const fileInfo = torrentManager.getFileInfo(torrentId, fileIndex);
+    
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
     }
     
-    const { path: filePath, name } = fileInfo;
-    
-    // Set headers for file download
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(name)}"`);
-    res.setHeader('Content-Type', 'application/octet-stream');
-    
-    // Stream file to response
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-    
-    fileStream.on('error', (error) => {
-      console.error('Error streaming file:', error);
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Error streaming file' });
-      } else {
-        res.end();
+    res.download(fileInfo.path, fileInfo.name, (err) => {
+      if (err) {
+        console.error('Error downloading file:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to download file' });
+        }
       }
     });
   } catch (error) {
-    console.error('Error downloading file:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error getting file:', error);
+    res.status(500).json({ error: 'Failed to get file' });
   }
 });
 
