@@ -1,54 +1,91 @@
 
 # TorrentFlow - Modern BitTorrent Client
 
-A sleek, responsive BitTorrent client with a beautiful dark interface built with React and styled with Tailwind CSS.
+A sleek, responsive BitTorrent client with a beautiful dark interface built with React, TypeScript, and WebTorrent.
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/3f3915c9-a758-4eb0-82fd-00c8423ccfa7
 
-## Features (UI Demo)
+## Features
 
-This is currently a UI demonstration that showcases:
+TorrentFlow is a fully functional BitTorrent client that offers:
 
+- ✅ Complete torrent management (add, remove, pause, resume)
 - ✅ Beautiful dark theme UI with purple accents
-- ✅ Torrent list with progress indicators
+- ✅ Torrent list with real-time progress indicators
 - ✅ Detailed torrent information panel
-- ✅ Search interface 
+- ✅ File selection within torrents
+- ✅ Bandwidth control and scheduling
+- ✅ Real-time updates via WebSockets
 - ✅ Responsive design that works on mobile devices
 - ✅ Collapsible sidebar
 
-## Next Steps
+## Requirements
 
-To make this a functional BitTorrent client, you would need to:
+- Node.js v16 or later
+- npm or yarn
 
-1. Set up a Python backend using a framework like Flask or FastAPI
-2. Integrate with libtorrent-python for BitTorrent functionality
-3. Create API endpoints for torrent management
-4. Connect the React frontend to the Python backend
+## Dependencies
 
-## Running the Demo
+The application uses:
 
-To run the UI demonstration:
+### Frontend
+- React with TypeScript
+- Tailwind CSS for styling
+- shadcn UI Components
+- Socket.io client for real-time updates
+- React Query for data fetching
 
+### Backend
+- Express.js for the REST API
+- WebTorrent for BitTorrent functionality
+- Socket.io for WebSocket connections
+- Multer for file uploads
+
+## Running the Application
+
+To run TorrentFlow locally:
+
+1. Install dependencies:
 ```bash
 npm install
+```
+
+2. Run both frontend and backend concurrently:
+```bash
+npm start
+```
+
+This will start:
+- Frontend development server (typically on http://localhost:5173)
+- Backend API server on http://localhost:3001
+
+Alternatively, you can run them separately:
+
+- For frontend only:
+```bash
 npm run dev
 ```
 
+- For backend server only:
+```bash
+npm run server
+```
+
+## API Documentation
+
+See the [SERVER_README.md](SERVER_README.md) file for detailed API documentation and server features.
+
 ## Technology Stack
 
-- React
-- TypeScript
+- React + TypeScript
 - Tailwind CSS
-- shadcn UI Components
-
-## Full Implementation Requirements
-
-For a complete BitTorrent client implementation, you would need:
-
-- Python 3.8+
-- libtorrent-python
-- Flask/FastAPI for the backend API
+- Express.js
+- WebTorrent
+- Socket.io
 - WebSockets for real-time updates
 
+## License
+
+This project is open source and available under the MIT License.

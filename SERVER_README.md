@@ -58,7 +58,9 @@ A full-featured BitTorrent management server that powers the TorrentFlow client.
    npm run server
    ```
 
-2. Test the API endpoints using curl or Postman:
+2. Access the frontend at http://localhost:5173 (or the port shown in your terminal)
+
+3. Test the API endpoints using curl or Postman:
 
    - Add a torrent:
      ```bash
@@ -80,7 +82,20 @@ A full-featured BitTorrent management server that powers the TorrentFlow client.
      curl -X DELETE http://localhost:3001/api/torrents/08ada5a7a6183aae1e09d831df6748d566095a10
      ```
 
-3. Test WebSocket connection using a WebSocket client or by opening the frontend application.
+4. Test WebSocket connection using the frontend application.
+
+## Troubleshooting
+
+If you experience slow connections or download issues:
+
+1. Force announce to trackers and DHT:
+   ```bash
+   curl -X POST http://localhost:3001/api/torrents/:id/announce
+   ```
+
+2. Check the console logs for connection and peer information.
+
+3. Ensure your firewall/router allows BitTorrent traffic.
 
 ## API Endpoints
 
@@ -104,6 +119,7 @@ A full-featured BitTorrent management server that powers the TorrentFlow client.
 - `DELETE /api/torrents/:id` - Remove a torrent (use query param `?removeFiles=true` to also delete files)
 - `POST /api/torrents/:id/pause` - Pause a torrent
 - `POST /api/torrents/:id/resume` - Resume a torrent
+- `POST /api/torrents/:id/announce` - Force announce to trackers and DHT
 - `POST /api/torrents/:id/files` - Select which files to download
   ```json
   {
@@ -158,14 +174,15 @@ Connect to the WebSocket server at the same host/port as the HTTP server to rece
   ```javascript
   socket.emit('torrent:unsubscribe', torrentId);
   ```
+- `torrent:announce` - Force announce to trackers and DHT
+  ```javascript
+  socket.emit('torrent:announce', torrentId);
+  ```
 
 #### Server to Client
 - `torrent:list` - Full list of torrents (sent periodically)
 - `torrent:details` - Detailed information about a specific torrent (when subscribed)
-
-## Configuration
-
-By default, downloaded files are stored in a `downloads` directory in the project root.
+- `torrent:announce:response` - Response after announce request
 
 ## Running in Production
 
