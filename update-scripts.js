@@ -8,7 +8,7 @@ const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 packageJson.scripts = {
   ...packageJson.scripts,
   "start": "concurrently \"npm run dev\" \"npm run server\"",
-  "server": "node src/server.js"
+  "server": "node --experimental-modules src/server.js"
 };
 
 // Write the updated package.json file

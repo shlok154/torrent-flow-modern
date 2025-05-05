@@ -32,6 +32,19 @@ export function setupWebSocketHandlers(io, torrentManager) {
       console.log(`Client ${socket.id} unsubscribed from torrent: ${torrentId}`);
       socket.leave(`torrent:${torrentId}`);
     });
+
+    // Add a specific handler for DHT and tracker announcements
+    socket.on('torrent:announce', (torrentId) => {
+      console.log(`Manually announcing torrent: ${torrentId}`);
+      const torrent = torrentManager.client.torrents.find(t => t.infoHash === torrentId);
+      if (torrent) {
+        // Force announce to all trackers
+        torrent.announce();
+        socket.emit('torrent:announce:response', { success: true, message: 'Announcing to trackers and DHT' });
+      } else {
+        socket.emit('torrent:announce:response', { success: false, message: 'Torrent not found' });
+      }
+    });
     
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);

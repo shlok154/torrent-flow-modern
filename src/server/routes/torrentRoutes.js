@@ -1,4 +1,3 @@
-
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -79,8 +78,26 @@ router.post('/add', async (req, res) => {
       return res.status(400).json({ error: 'Magnet URL is required' });
     }
     
+    // Ensure we have additional trackers
+    const enhancedOptions = {
+      ...options,
+      announce: [
+        'udp://tracker.opentrackr.org:1337/announce',
+        'udp://open.tracker.cl:1337/announce',
+        'udp://9.rarbg.com:2810/announce',
+        'udp://tracker.openbittorrent.com:6969/announce',
+        'http://tracker.openbittorrent.com:80/announce'
+      ]
+    };
+    
     const downloadPath = fileManager.getDownloadsPath();
-    const torrent = await torrentManager.addTorrent(magnetUrl, downloadPath, options);
+    const torrent = await torrentManager.addTorrent(magnetUrl, downloadPath, enhancedOptions);
+    
+    // Manually announce to trackers after adding
+    const addedTorrent = torrentManager.client.torrents.find(t => t.infoHash === torrent.id);
+    if (addedTorrent) {
+      addedTorrent.announce();
+    }
     
     res.status(201).json(torrent);
   } catch (error) {
@@ -98,9 +115,29 @@ router.post('/upload', upload.single('torrent'), async (req, res) => {
     
     const filePath = req.file.path;
     const downloadPath = fileManager.getDownloadsPath();
-    const options = req.body.options ? JSON.parse(req.body.options) : {};
     
-    const torrent = await torrentManager.addTorrentFile(filePath, downloadPath, options);
+    // Parse options with additional trackers
+    const optionsStr = req.body.options || '{}';
+    const parsedOptions = typeof optionsStr === 'string' ? JSON.parse(optionsStr) : optionsStr;
+    
+    const enhancedOptions = {
+      ...parsedOptions,
+      announce: [
+        'udp://tracker.opentrackr.org:1337/announce',
+        'udp://open.tracker.cl:1337/announce',
+        'udp://9.rarbg.com:2810/announce',
+        'udp://tracker.openbittorrent.com:6969/announce',
+        'http://tracker.openbittorrent.com:80/announce'
+      ]
+    };
+    
+    const torrent = await torrentManager.addTorrentFile(filePath, downloadPath, enhancedOptions);
+    
+    // Manually announce to trackers after adding
+    const addedTorrent = torrentManager.client.torrents.find(t => t.infoHash === torrent.id);
+    if (addedTorrent) {
+      addedTorrent.announce();
+    }
     
     // Remove the temporary file
     fs.unlink(filePath, (err) => {
@@ -116,6 +153,57 @@ router.post('/upload', upload.single('torrent'), async (req, res) => {
     if (req.file) {
       fs.unlink(req.file.path, () => {});
     }
+  }
+});
+
+// Force announce a torrent to trackers
+router.post('/:id/announce', (req, res) => {
+  try {
+    const torrentId = req.params.id;
+    const torrent = torrentManager.client.torrents.find(t => t.infoHash === torrentId);
+    
+    if (!torrent) {
+      return res.status(404).json({ error: 'Torrent not found' });
+    }
+    
+    // Force announce to all trackers
+    torrent.announce();
+    
+    res.json({ success: true, message: 'Announcing to trackers' });
+  } catch (error) {
+    console.error('Error announcing torrent:', error);
+    res.status(500).json({ error: 'Failed to announce torrent' });
+  }
+});
+
+// Add more trackers to a torrent
+router.post('/:id/trackers', (req, res) => {
+  try {
+    const torrentId = req.params.id;
+    const { trackers } = req.body;
+    
+    if (!Array.isArray(trackers) || trackers.length === 0) {
+      return res.status(400).json({ error: 'trackers must be a non-empty array' });
+    }
+    
+    const torrent = torrentManager.client.torrents.find(t => t.infoHash === torrentId);
+    
+    if (!torrent) {
+      return res.status(404).json({ error: 'Torrent not found' });
+    }
+    
+    // Add each tracker
+    trackers.forEach(tracker => {
+      torrent.addTrackers([tracker]);
+    });
+    
+    // Force announce after adding
+    torrent.announce();
+    
+    res.json({ success: true, message: 'Trackers added and announced' });
+  } catch (error) {
+    console.error('Error adding trackers:', error);
+    res.status(500).json({ error: 'Failed to add trackers' });
   }
 });
 
@@ -192,6 +280,37 @@ router.post('/:id/files', (req, res) => {
   } catch (error) {
     console.error('Error selecting files:', error);
     res.status(500).json({ error: 'Failed to select files' });
+  }
+});
+
+// Optimize piece selection
+router.post('/:id/optimize', (req, res) => {
+  try {
+    const torrentId = req.params.id;
+    const torrent = torrentManager.client.torrents.find(t => t.infoHash === torrentId);
+    
+    if (!torrent) {
+      return res.status(404).json({ error: 'Torrent not found' });
+    }
+    
+    // Configure for better performance
+    if (torrent._selections) {
+      // Clear existing selections and use rarest-first
+      torrent._selections = [];
+      
+      // Request all pieces in rarest-first order
+      torrent.select(0, torrent.pieces.length - 1, 1, true);
+    }
+    
+    // Increase concurrent webseed connections if available
+    if (torrent._webseedNumSlots) {
+      torrent._webseedNumSlots = 10;
+    }
+    
+    res.json({ success: true, message: 'Torrent piece selection optimized' });
+  } catch (error) {
+    console.error('Error optimizing torrent:', error);
+    res.status(500).json({ error: 'Failed to optimize torrent' });
   }
 });
 

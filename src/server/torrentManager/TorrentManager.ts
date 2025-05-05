@@ -1,7 +1,6 @@
-
 import WebTorrent from 'webtorrent';
 import { formatBytes, formatTime, getStatus, isValidInfoHash } from '../utils';
-import { TorrentInfo, TorrentDetails, BandwidthSettings } from '../../types/torrent';
+import { TorrentInfo, TorrentDetails, BandwidthSettings, TorrentMetrics } from '../../types/torrent';
 import { ipFilter } from '../ipFilter';
 import { scheduleManager } from '../scheduleManager';
 import { queueManager } from '../queueManager';
@@ -360,6 +359,11 @@ class TorrentManager {
         resolve();
       });
     });
+  }
+
+  // Added for WebSocket and debugging operations
+  getClient(): WebTorrent.Instance {
+    return this.client;
   }
 }
 
