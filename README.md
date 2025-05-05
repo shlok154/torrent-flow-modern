@@ -3,10 +3,6 @@
 
 A sleek, responsive BitTorrent client with a beautiful dark interface built with React, TypeScript, and WebTorrent.
 
-## Project info
-
-**URL**: https://lovable.dev/projects/3f3915c9-a758-4eb0-82fd-00c8423ccfa7
-
 ## Features
 
 TorrentFlow is a fully functional BitTorrent client that offers:
@@ -26,65 +22,74 @@ TorrentFlow is a fully functional BitTorrent client that offers:
 - Node.js v16 or later
 - npm or yarn
 
-## Dependencies
-
-The application uses:
-
-### Frontend
-- React with TypeScript
-- Tailwind CSS for styling
-- shadcn UI Components
-- Socket.io client for real-time updates
-- React Query for data fetching
-
-### Backend
-- Express.js for the REST API
-- WebTorrent for BitTorrent functionality
-- Socket.io for WebSocket connections
-- Multer for file uploads
-
-## Running the Application
-
-To run TorrentFlow locally:
+## Setup and Installation
 
 1. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Run both frontend and backend concurrently:
+2. Update scripts for TypeScript support:
+```bash
+node update-ts-scripts.js
+```
+
+3. Run both frontend and backend concurrently:
 ```bash
 npm start
 ```
 
 This will start:
-- Frontend development server (typically on http://localhost:5173)
+- Frontend development server (typically on http://localhost:5173 or http://localhost:8080)
 - Backend API server on http://localhost:3001
 
-Alternatively, you can run them separately:
+## Development Scripts
 
-- For frontend only:
+- Start development environment (frontend + backend):
+```bash
+npm start
+```
+
+- Frontend development server only:
 ```bash
 npm run dev
 ```
 
-- For backend server only:
+- Backend server only:
 ```bash
 npm run server
 ```
 
-## API Documentation
+- Build for production:
+```bash
+npm run build && npm run build:server
+```
 
-See the [SERVER_README.md](SERVER_README.md) file for detailed API documentation and server features.
+- Run production version:
+```bash
+npm run start:prod
+```
 
-## Technology Stack
+## Dependencies
 
-- React + TypeScript
+### Frontend
+- React with TypeScript
 - Tailwind CSS
+- shadcn/ui Components
+- Socket.io client
+- React Query
+- Recharts for data visualization
+
+### Backend
 - Express.js
 - WebTorrent
 - Socket.io
-- WebSockets for real-time updates
+- Multer for file uploads
+- ts-node for TypeScript execution
+
+## API Documentation
+
+See the [SERVER_README.md](SERVER_README.md) file for detailed API documentation and server features.
 
 ## License
 
