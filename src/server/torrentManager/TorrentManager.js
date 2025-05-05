@@ -1,17 +1,44 @@
 
-// JavaScript implementation of TorrentManager as ES modules
-// This bridges the TypeScript implementation
-
+// JavaScript implementation of TorrentManager.ts
 import WebTorrent from 'webtorrent';
 import { formatBytes, formatTime, getStatus, isValidInfoHash } from '../utils.js';
 import { ipFilter } from '../ipFilter.js';
 import { scheduleManager } from '../scheduleManager.js';
 import { queueManager } from '../queueManager.js';
-import { createDefaultMetrics, getPeerDetails } from './torrentUtils.js';
 import { updateMetrics } from './metricsManager.js';
 import { applyScheduledSettings } from './scheduleHelper.js';
-import { handleTorrentFile, getFileInfo } from './fileManager.js';
+import { getFileInfo, handleTorrentFile } from './fileManager.js';
 import { setupTorrentEvents, setupRetryLogic } from './eventHandlers.js';
+
+// Helper function for creating default metrics
+const createDefaultMetrics = () => ({
+  downloadTotal: '0 B',
+  uploadTotal: '0 B',
+  ratio: 0,
+  pieceCount: 0,
+  pieceLength: '0 B',
+  averageSpeed: '0 B/s',
+  connections: 0,
+  activeTime: '0s',
+  wastedBytes: '0 B'
+});
+
+// Helper function for getting peer details
+const getPeerDetails = (torrent) => {
+  if (!torrent || !torrent.wires || !Array.isArray(torrent.wires)) {
+    return [];
+  }
+  
+  return torrent.wires.map(wire => ({
+    address: wire.remoteAddress,
+    connectionType: wire.type || 'unknown',
+    downloadSpeed: formatBytes(wire.downloadSpeed || 0) + '/s',
+    uploadSpeed: formatBytes(wire.uploadSpeed || 0) + '/s',
+    requests: wire.requests?.length || 0,
+    peerInterested: !!wire.peerInterested,
+    peerChoking: !!wire.peerChoking
+  }));
+};
 
 class TorrentManager {
   constructor() {
@@ -265,7 +292,6 @@ class TorrentManager {
     };
   }
 
-  // Bandwidth limiting functions
   setGlobalDownloadLimit(limitKBs) {
     this.bandwidthSettings.globalDownloadLimit = limitKBs;
     this.client.throttleDownload?.(limitKBs * 1024); // Convert to bytes/sec
@@ -309,7 +335,6 @@ class TorrentManager {
     return this.bandwidthSettings;
   }
 
-  // File selection functions
   selectFiles(infoHash, fileIndices) {
     const torrent = this.client.torrents.find(t => t.infoHash === infoHash);
     if (!torrent) return false;
@@ -327,7 +352,6 @@ class TorrentManager {
     return queueManager.setFilePriority(infoHash, fileName, priority);
   }
 
-  // Security and verification functions
   verifyTorrent(infoHash) {
     const torrent = this.client.torrents.find(t => t.infoHash === infoHash);
     if (!torrent || !torrent.verify) return false;
@@ -348,7 +372,6 @@ class TorrentManager {
     });
   }
 
-  // Added for WebSocket and debugging operations
   getClient() {
     return this.client;
   }
