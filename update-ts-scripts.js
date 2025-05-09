@@ -8,7 +8,7 @@ const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 packageJson.scripts = {
   ...packageJson.scripts,
   "start": "concurrently \"npm run dev\" \"npm run server\"",
-  "server": "ts-node --esm src/server.ts",
+  "server": "node --loader ts-node/esm src/server.mts",
   "build:server": "tsc --project tsconfig.server.json",
   "start:prod": "concurrently \"npm run preview\" \"node dist/server.js\""
 };
@@ -20,6 +20,9 @@ if (!packageJson['ts-node']) {
     "experimentalSpecifierResolution": "node"
   };
 }
+
+// Add type module
+packageJson.type = "module";
 
 // Write the updated package.json file
 fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2), 'utf8');

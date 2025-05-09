@@ -84,9 +84,9 @@ npm install -g typescript ts-node
 npm cache clean --force
 ```
 
-3. Run the server directly with ts-node:
+3. Run the server directly:
 ```bash
-npx ts-node --esm src/server.ts
+node --loader ts-node/esm src/server.mts
 ```
 
 ## Dependencies

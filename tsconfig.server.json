@@ -7,9 +7,10 @@
     "target": "ESNext",
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "noEmit": false
   },
-  "include": ["src/server/**/*.ts", "src/types/**/*.ts", "src/server.ts"],
+  "include": ["src/server/**/*.ts", "src/types/**/*.ts", "src/server.mts"],
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
