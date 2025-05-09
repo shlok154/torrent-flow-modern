@@ -8,7 +8,7 @@ const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 packageJson.scripts = {
   ...packageJson.scripts,
   "start": "concurrently \"npm run dev\" \"npm run server\"",
-  "server": "ts-node --esm src/server.js",
+  "server": "ts-node --esm src/server.ts",
   "build:server": "tsc --project tsconfig.server.json",
   "start:prod": "concurrently \"npm run preview\" \"node dist/server.js\""
 };
