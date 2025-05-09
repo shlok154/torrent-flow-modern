@@ -70,6 +70,25 @@ npm run build && npm run build:server
 npm run start:prod
 ```
 
+## Troubleshooting TypeScript Issues
+
+If you encounter TypeScript-related errors when running the server:
+
+1. Make sure TypeScript is installed globally:
+```bash
+npm install -g typescript ts-node
+```
+
+2. Clear npm cache if needed:
+```bash
+npm cache clean --force
+```
+
+3. Run the server directly with ts-node:
+```bash
+npx ts-node --esm src/server.ts
+```
+
 ## Dependencies
 
 ### Frontend
