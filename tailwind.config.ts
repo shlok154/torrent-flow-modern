@@ -20,7 +20,7 @@ export default {
 		},
 		extend: {
 			colors: {
-				'border-color': 'hsl(var(--border))',
+				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
@@ -69,7 +69,6 @@ export default {
 					'bg-dark': '#1A1F2C',
 					'light-purple': '#D6BCFA',
 				},
-				border: 'hsl(var(--border))',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
